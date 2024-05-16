@@ -197,7 +197,206 @@ microk8s kubectl apply -f pvc-nfs.yaml
 ```
 Una vez se ejecuten estos comandos, el Persistent Volume Claim (PVC) debería haberse vinculado correctamente. Además, se podrá ver en el servidor NFS el PVC en el directorio compartido especificado.
 
-10) 
+10) Configuración de manifiestos MySQL, Wordpress e Ingress:
+En esta sección vamos a crear los manifiestos para los diferentes servicios que se utilizarán en el proyecto, todos los cuales se encuentran en la carpeta Scripts con los datos específicos para este proyecto.
+
+- MySQL: Primero, creamos el archivo `mysql-pv-pvc.yaml`:
+```
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv
+spec:
+  storageClassName: nfs-csi
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: 0.0.0.0 #ip del nfs-server
+    path: /srv/nfs #cambiar por la ruta escogida
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  labels:
+    app: mysql
+spec:
+  storageClassName: nfs-csi
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+Se debe remplazar <contraseña>, <base_de_datos>, <usuario> por los datos reales.
+
+- Aplicamos el manifiesto para comprobar que funcione correctamente:
+```
+microk8s kubectl apply -f mysql-pv-pvc.yaml
+```
+
+- Para verificar que se haya vinculado correctamente el PVC, utilizamos:
+```
+microk8s kubectl get pvc
+```
+
+- Wordpress: Creamos el archivo `wordpress-pv-pvc.yaml`:
+```
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: wordpress-pv
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: nfs-csi
+  nfs:
+    server: 0.0.0.0 #ip del nfs-server
+    path: /srv/nfs #cambiar por la ruta escogida
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wordpress-pvc
+  labels:
+    app: wordpress
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-csi
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+Se debe remplazar <host_base_de_datos>, <contraseña>, <usuario>, <base_de_datos> por los datos reales.
+
+- Aplicamos los manifiestos y verificamos que los PVC y los pods se hayan creado correctamente:
+```
+microk8s kubectl apply -f wordpress-pv-pvc.yaml
+microk8s kubectl get pvc
+microk8s kubectl apply -f wordpress-deployment.yaml
+microk8s kubectl get pods
+```
+
+- Ingress: Creamos el archivo `ing-wordpress.yaml`:
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: http-ingress
+  labels:
+    app: wordpress
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: wordpress
+            port:
+              number: 80
+```
+
+- Aplicamos el manifiesto:
+```
+microk8s kubectl apply -f ing-wordpress.yaml
+```
+
+Una vez completada la configuración anterior, podemos acceder a la página de configuración de Wordpress utilizando la IP pública de la máquina MASTER en un navegador web. Al ingresar, se mostrará la página de configuración inicial de Wordpress, donde podemos llenar los datos requeridos, como nombre de la página, usuario y contraseña de administrador, y detalles de la base de datos.
+
+Al completar esta configuración inicial, tendremos nuestra página de Wordpress funcionando correctamente en el clúster Kubernetes configurado. Podemos comenzar a agregar contenido y personalizar la página según nuestras necesidades.
+
+![image](https://github.com/migueflorez10/Proyecto-2/assets/68928440/68217168-7022-4af7-868f-e320530a82ed)
+![image](https://github.com/migueflorez10/Proyecto-2/assets/68928440/43c80166-e5b1-49ef-8bf0-6fe0940c9f6b)
+
+11) Configuración de Certificación SSL:
+- Antes de comenzar con este paso, debes agregar el registro para la IP pública de la máquina MASTER en tu servidor DNS.
+  - nstalación de cert-manager:
+    Instala cert-manager ejecutando el siguiente comando:
+    ```
+    microk8s kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.3.1/cert-manager.yaml
+    ```
+
+    Verifica que cert-manager se haya instalado correctamente con el siguiente comando:
+     ```
+     microk8s kubectl get pods -n=cert-manager
+     ```
+  - Creación de claves .pem:
+    Genera las claves .pem para los archivos cluster-issuer-staging.yaml y cluster-issuer.yaml con los siguientes comandos:
+    ```
+    openssl genrsa -out letsencrypt-staging.pem 2048
+    openssl genrsa -out letsencrypt-private-key.pem 2048
+    ```
+
+    Luego, crea un secreto en Kubernetes con estas claves:
+    ```
+    sudo microk8s kubectl create secret generic letsencrypt-staging --from-file=letsencrypt-staging.pem
+    sudo microk8s kubectl create secret generic letsencrypt-private-key --from-file=letsencrypt-private-key.pem
+    ```
+
+  - Creación de ClusterIssuer:
+    Crea los manifiestos cluster-issuer-staging.yaml y cluster-issuer.yaml con los siguientes contenidos:
+     ```
+     # cluster-issuer-staging.yaml
+    apiVersion: cert-manager.io/v1
+    kind: ClusterIssuer
+    metadata:
+      name: letsencrypt-staging
+    spec:
+      acme:
+        email: tucorreo@gmail.com
+        server: https://acme-staging-v02.api.letsencrypt.org/directory
+        privateKeySecretRef:
+          name: letsencrypt-staging
+        solvers:
+          - http01:
+              ingress:
+                class: public
+     ```
+
+     ```
+     # cluster-issuer.yaml
+    apiVersion: cert-manager.io/v1
+    kind: ClusterIssuer
+    metadata:
+      name: letsencrypt-prod
+    spec:
+      acme:
+        email: tucorreo@gmail.com
+        server: https://acme-v02.api.letsencrypt.org/directory
+        privateKeySecretRef:
+          name: letsencrypt-private-key
+        solvers:
+          - http01:
+              ingress:
+                class: public
+     ```
+
+  - Aplica los manifiestos:
+      ```
+      microk8s kubectl apply -f cluster-issuer-staging.yaml
+      microk8s kubectl apply -f cluster-issuer.yaml
+      ```
+
+  
+
+  
+
+
+
+
 
 
 
