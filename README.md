@@ -44,6 +44,39 @@ El ambiente de desarrollo para este proyecto se basa en Google Cloud Platform (G
 
 
 ## Guia paso a paso
+1) Creación de las instancias(mircrok8s-master, microk8s-worker1, microk8s-worker2, microk8s-nfs):
+- Se modifican los discos de arranque de las máquinas virtuales y se configura el firewall.
+![image](https://github.com/migueflorez10/Proyecto-2/assets/68928440/30fea12d-688b-4899-ada2-d79779dc1383)
+![image](https://github.com/migueflorez10/Proyecto-2/assets/68928440/5d607cbc-5c9e-46fb-833e-4919a64dbb91)
+
+2)  Actualización de la máquina virtual:
+- Se ejecuta el siguiente comando para actualizar la máquina virtual:
+```
+sudo apt-get update
+```
+
+3) Instalación de Microk8s en Ubuntu:
+- Se instala Microk8s en Ubuntu utilizando el siguiente comando:
+```
+sudo snap install microk8s --classic
+```
+
+4) Verificación del estado de Kubernetes:
+- Se verifica el estado de Kubernetes utilizando el siguiente comando:
+```
+microk8s status --wait-ready
+```
+
+5) Configuración de permisos:
+- Si se muestra un mensaje de falta de permisos, se crea el directorio ./kube y se copian los comandos proporcionados. Luego, se reinicia la máquina para aplicar
+los permisos necesarios.
+
+6) Inicio de servicios necesarios:
+- Se habilitan los servicios necesarios con el siguiente comando:
+```
+microk8s enable dashboard dns registry istio ingress
+```
+
 
 
 
