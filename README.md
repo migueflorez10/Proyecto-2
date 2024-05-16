@@ -28,3 +28,34 @@ balanceadores de carga, alta disponibilidad en todas las capas de la aplicación
 La arquitectura del proyecto consiste en un clúster de Kubernetes en GCP con al menos tres nodos, cada uno ejecutando microk8s. Se utilizará un servidor NFS desplegado en el 
 clúster para manejar volúmenes compartidos. Se implementará un balanceador de carga para la capa de aplicación, y se desplegará una base de datos de alta disponibilidad 
 en Kubernetes. El sistema se accederá a través de un nombre de dominio configurado para el servicio.
+
+La arquitectura consta de los siguientes componentes principales:
+- **Google Cloud Platform (GCP):** La infraestructura de la nube utilizada para desplegar el clúster de Kubernetes y los servicios relacionados. Se emplea GCP por su escalabilidad, confiabilidad y facilidad de uso.
+- **Clúster de Kubernetes:** Se instala un clúster de Kubernetes con microk8s en al menos tres máquinas virtuales en GCP. Este clúster será la base sobre la cual se desplegará la aplicación de WordPress y se configurarán los servicios necesarios para garantizar alta disponibilidad.
+- **Servidor NFS:** Se monta un servidor NFS (Network File System) en el clúster de Kubernetes para manejar volúmenes compartidos entre los nodos. Esto permite que los diferentes pods accedan a los mismos datos de manera consistente.
+- **Balanceador de Carga:** Se implementa un balanceador de carga para distribuir el tráfico de red de manera equitativa entre los diferentes pods de la aplicación. Esto garantiza que la carga se distribuya de manera eficiente y se eviten cuellos de botella.
+- **Alta Disponibilidad en Capa de Aplicación:** Se configura la aplicación de WordPress para garantizar su alta disponibilidad. Esto implica tener múltiples réplicas de los pods que ejecutan la aplicación y utilizar mecanismos de tolerancia a fallos para garantizar su disponibilidad en caso de errores.
+- **Alta Disponibilidad en Capa de Base de Datos:** Se despliega una base de datos de alta disponibilidad en Kubernetes para respaldar la aplicación de WordPress. Esto se logra mediante la configuración de réplicas de la base de datos y la implementación de mecanismos de recuperación ante fallos.
+- **Alta Disponibilidad en Capa de Almacenamiento:** Se utiliza el servidor NFS montado en el clúster de Kubernetes para garantizar la disponibilidad de los datos de la aplicación. El servidor NFS proporciona un almacenamiento persistente que es accesible por todos los pods de la aplicación.
+- **Dominio Personalizado:** Se configura un nombre de dominio personalizado (por ejemplo, https://proyecto2.dominio.tld) para acceder al servicio desplegado en el clúster de Kubernetes. Esto permite que la aplicación sea accesible de forma pública a través de Internet.
+
+## Descripción del Ambiente de Desarrollo y Técnico
+El ambiente de desarrollo para este proyecto se basa en Google Cloud Platform (GCP), utilizando microk8s para la instalación del clúster de Kubernetes. Se utilizará GitHub para el control de versiones del código y la documentación del proyecto. Se requerirá un profundo conocimiento de Kubernetes, microk8s, y la configuración de servicios de alta disponibilidad en la nube.
+
+
+## Guia paso a paso
+
+
+
+## Referencias
+- [Instalación de microk8s](https://microk8s.io/#install-microk8s)
+- [Documentación de clustering en microk8s](https://microk8s.io/docs/clustering)
+- [Cómo utilizar NFS en microk8s](https://microk8s.io/docs/how-to-nfs)
+- [Video tutorial sobre microk8s](https://www.youtube.com/watch?v=3T6skoL3RTA&feature=youtu.be)
+- [Imagen de Docker para MySQL en Bitnami](https://hub.docker.com/r/bitnami/mysql)
+- [Imagen de Docker para WordPress](https://hub.docker.com/_/wordpress)
+- [Tutorial de Kubernetes para aplicaciones stateful (MySQL y WordPress)](https://kubernetes.io/docs/tutorials/stateful-application/mysql-wordpress-persistent-volume/)
+
+
+
+
