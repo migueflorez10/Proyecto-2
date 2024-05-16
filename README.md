@@ -77,6 +77,81 @@ los permisos necesarios.
 microk8s enable dashboard dns registry istio ingress
 ```
 
+7) Creación del cluster
+- En la instancia maestro, se ejecuta el siguiente comando para obtener el comando necesario para unir un nodo al clúster:
+```
+microk8s add-node
+```
+- debe aparecer un mensaje así.
+![image](https://github.com/migueflorez10/Proyecto-2/assets/68928440/5eb29405-a44c-400e-af85-5d6b320443b8)
+![image](https://github.com/migueflorez10/Proyecto-2/assets/68928440/7dda415d-7070-462a-ba3d-ccdacbacb989)
+
+
+- Se debe copiar el comando de "join" que aparece como resultado de este comando.
+![image](https://github.com/migueflorez10/Proyecto-2/assets/68928440/2460e949-30fb-4456-9ef7-c142dbc00475)
+
+- Verificación de nodos en el maestro:
+Para verificar que todos los nodos están correctamente unidos al clúster, se ejecuta el siguiente comando en el maestro:
+```
+microk8s kubectl get nodes
+```
+
+- Debería aparecer algo así:
+![image](https://github.com/migueflorez10/Proyecto-2/assets/68928440/79b89cbf-db16-4bc6-9ef1-1a8f6120896a)
+
+8) Configuración del NFS-Server:
+- Se crea una máquina Ubuntu 22.04 con un disco de arranque de 20GB y se habilita el tráfico HTTP, HTTPS y las verificaciones de balanceador de cargas.
+- Una vez creada, se actualiza la máquina y se instala el servidor de NFS:
+```
+sudo apt-get update
+sudo apt-get install nfs-kernel-server
+```
+
+- Se procede a crear el directorio que se compartirá a los clientes NFS y se le otorgan los permisos necesarios:
+```
+sudo mkdir -p /srv/nfs
+sudo chown nobody:nogroup /srv/nfs
+sudo chmod 0777 /srv/nfs
+```
+
+- Luego, se edita el archivo `exports` para permitir el vínculo de este directorio:
+```
+sudo mv /etc/exports /etc/exports.bak
+echo '/srv/nfs *(rw,sync,no_subtree_check)' | sudo tee /etc/exports
+```
+
+- Finalmente, se reinicia el servicio y se verifica que esté funcionando correctamente:
+```
+sudo systemctl restart nfs-kernel-server
+sudo systemctl status nfs-kernel-server
+```
+
+- Instalación de los drivers CSI para NFS:
+  - Desde la máquina MASTER, se habilita el paquete de Helm 3 y se obtienen los drivers:
+  sudo systemctl status nfs-kernel-server
+  ```
+  microk8s enable helm3
+  microk8s helm3 repo add csi-driver-nfs https://raw.githubusercontent.com/kubernetes-csi/csi-driver-nfs/master/charts
+  microk8s helm3 repo update
+  sudo systemctl status nfs-kernel-server
+  ```
+- Se descarga el helm chart del namespace de kube-system:
+   ```
+  microk8s helm3 install csi-driver-nfs csi-driver-nfs/csi-driver-nfs \
+    --namespace kube-system \
+    --set kubeletDir=/var/snap/microk8s/common/var/lib/kubelet
+   ```
+
+- Se espera hasta que estén los pods, lo cual se verifica con el siguiente comando:
+   ```
+   microk8s kubectl wait pod --selector app.kubernetes.io/name=csi-driver-nfs --for condition=ready --namespace kube-system
+   ```
+
+- Una vez que los pods estén listos, se verifica que los drivers CSI estén disponibles:
+  ```
+  microk8s kubectl get csidrivers
+  ```
+
 
 
 
