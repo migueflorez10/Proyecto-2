@@ -152,6 +152,52 @@ sudo systemctl status nfs-kernel-server
   microk8s kubectl get csidrivers
   ```
 
+- Y debe verse un output similar al siguiente:
+  ```
+  NAME             ATTACHREQUIRED   PODINFOONMOUNT   STORAGECAPACITY   TOKENREQUESTS   REQUIRESREPUBLISH   MODES        AGE
+  nfs.csi.k8s.io   false            false            false             <unset>         false               Persistent   39m
+  ```
+
+9) Posteriormente, se crean los archivos sc-nfs.yaml y pvc-nfs.yaml con el siguiente contenido:
+- sc-nfs.yaml:
+```
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-csi
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: 0.0.0.0 #ip del nfs-server
+  share: /srv/nfs
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+mountOptions:
+  - hard
+  - nfsvers=4.1
+```
+
+- pvc-nfs.yaml:
+```
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc
+spec:
+  storageClassName: nfs-csi
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+```
+
+- Estos archivos se aplican con los siguientes comandos:
+```
+microk8s kubectl apply -f sc-nfs.yaml
+microk8s kubectl apply -f pvc-nfs.yaml
+```
+Una vez se ejecuten estos comandos, el Persistent Volume Claim (PVC) debería haberse vinculado correctamente. Además, se podrá ver en el servidor NFS el PVC en el directorio compartido especificado.
+
+10) 
 
 
 
