@@ -314,6 +314,57 @@ spec:
 microk8s kubectl apply -f ing-wordpress.yaml
 ```
 
+- Creación de Ingress para certificado SSL:
+Crea el manifiesto ingress-routes.yaml con el siguiente contenido:
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-routes
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+spec:
+  tls:
+    - hosts:
+        - tudominio.com
+      secretName: tls-secret
+  rules:
+    - host: tudominio.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wordpress
+                port:
+                  number: 80
+
+```
+
+- Aplica el manifiesto:
+```
+microk8s kubectl apply -f ingress-routes.yaml
+```
+
+- Verifica que el certificado haya sido creado correctamente:
+```
+microk8s kubectl get certificate
+```
+
+- Cambio a certificado de producción:
+na vez que el certificado haya sido creado correctamente, cambia el cluster-issuer en el archivo ingress-routes.yaml de "letsencrypt-staging" a "letsencrypt-prod".
+
+Aplica el manifiesto nuevamente y verifica que el certificado pase a estado verdadero:
+
+```
+microk8s kubectl apply -f ingress-routes.yaml
+microk8s kubectl get certificate
+```
+
+Ahora podrás acceder a tu página por medio de HTTPS.
+
+
 Una vez completada la configuración anterior, podemos acceder a la página de configuración de Wordpress utilizando la IP pública de la máquina MASTER en un navegador web. Al ingresar, se mostrará la página de configuración inicial de Wordpress, donde podemos llenar los datos requeridos, como nombre de la página, usuario y contraseña de administrador, y detalles de la base de datos.
 
 Al completar esta configuración inicial, tendremos nuestra página de Wordpress funcionando correctamente en el clúster Kubernetes configurado. Podemos comenzar a agregar contenido y personalizar la página según nuestras necesidades.
